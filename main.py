@@ -2,9 +2,20 @@ import csv
 import random
 import threading
 import time
+import tkinter as tk
 
+
+import pygame
+pygame.mixer.init()
+correct_answer = pygame.mixer.Sound("correct-83487.mp3")
+wrong_answer = pygame.mixer.Sound("y2mate.com - Wrong Answer Sound effect.mp3")
+time_out = pygame.mixer.Sound("mixkit-sad-game-over-trombone-471.wav")
+pygame.mixer.music.load("y2mate.com - Merry Go Round Of Life from Howls Moving Castle  Vitamin String Quartet.mp3")
+pygame.mixer.music.set_volume(0.5)
+pygame.mixer.music.play(loops=-1)
 import cowsay
 from colorama import Fore, Style
+
 
 
 def print_title():
@@ -41,7 +52,7 @@ def display_difficulty_options():
     print("=" * 50)
 
 class MgaTanong:
-    def __init__(self, questions):
+    def __init__(self, questions, total_time = 100):
         self.questions = questions
         self.score = 0
         self.time_out = False
@@ -55,29 +66,59 @@ class MgaTanong:
 
     def ask_question(self, index, question):
         self.time_out = False
-        timer_thread = threading.Thread(target=self.countdown, args=(10,))  # 10 seconds timer
-        timer_thread.start()
+        # timer_thread = threading.Thread(target=self.countdown, args=(10,))  # 10 seconds timer
+        # timer_thread.start()
+
 
         cowsay.cow(f"{Fore.RED}Question {index}{Style.RESET_ALL}: {Fore.BLUE}{question[0]}{Style.RESET_ALL}")
-        user_answer = input(f"Enter your {Fore.LIGHTGREEN_EX}answer:{Style.RESET_ALL} ")
+
+        user_input = input("Enter your answer: ")
 
         if self.time_out:
+            time_out.play()
             cowsay.tux(f"{Fore.RED}your time is out!!!{Style.RESET_ALL} The answer is: {Fore.BLUE}{question[1]}{Style.RESET_ALL}")
 
         else:
-            if user_answer.strip().lower() == question[1].lower():
+            if user_input.strip().lower() == question[1].lower():
+                correct_answer.play()
                 cowsay.tux(f"{Fore.BLUE}Correct!{Style.RESET_ALL}")
                 self.score += 1
             else:
+                wrong_answer.play()
                 cowsay.tux(
                     f"{Fore.RED}Wrong!{Style.RESET_ALL} The answer is: {Fore.BLUE}{question[1]}{Style.RESET_ALL}")
 
-        timer_thread.join()  # Wait for the timer thread to finish
+        #timer_thread.join()  # Wait for the timer thread to finish
         print(f"Your current score: {self.score}/{index}\n")
+    def word_question(self, index, question):
+        user_input = input("Enter a letter")
+
+
+        answer_length = len(question[1])  # Length of the correct answer
+        hidden_word = ['_' for _ in range(answer_length)]  # Create a list of underscores
+        attempts = 0  # Track the number of attempts
+
+        while '_' in hidden_word and not self.time_out:
+            # Display the current state of the word with underscores
+            print("Your answer: " + ' '.join(hidden_word))
+            user_input = input(f"Guess a letter (Attempt {attempts + 1}): ").strip().lower()
+
+            if len(user_input) != 1 or not user_input.isalpha():
+                print("Please enter a single letter.")
+                continue
+
+            if user_input in question[1].lower():
+                for i, letter in enumerate(question[1].lower()):
+                    if letter == user_input:
+                        hidden_word[i] = question[1][i]  # Reveal the correct letter
+                print(f"{Fore.BLUE}Correct guess!{Style.RESET_ALL}")
+            else:
+                wrong_answer.play()
+                print(f"{Fore.RED}Wrong guess!{Style.RESET_ALL}")
+            attempts +=1
 
     def countdown(self, time_limit):
         print(f"You have{Fore.LIGHTRED_EX} {time_limit}{Style.RESET_ALL} seconds to answer this question.")
-        time.sleep(time_limit)
         self.time_out = True
 
 def save_results(pangalan,difficulty, file_name,  score):
@@ -88,8 +129,14 @@ def save_results(pangalan,difficulty, file_name,  score):
 
 def main():
     print_title()
-    pangalan = input("Enter your name first before we proceed: ")
-    print (f"welcome {pangalan} to UCQ!!")
+    while True:
+        pangalan = input("Enter your name first before we proceed: ").strip()
+        if pangalan:  # Check if the input is not empty
+            break
+        else:
+            print("You need to enter your name!")
+
+    print(f"Welcome {pangalan} to UCQ!!")
     ENTER = f"{Fore.BLUE}ENTER{Style.RESET_ALL}"
     input(f"Press {ENTER} to reveal the category...")
 
@@ -121,10 +168,10 @@ def main():
             file_name = "WWTBAPB.csv"  # Assuming you have this file for easy question
         elif difficulty_choice == '2':
             difficulty = "normal"
-            file_name = "TriviaNormal.csv"  # Use TriviaNormal.csv for normal difficulty
+            file_name = "WWTBAPBnormal.csv"  # Use TriviaNormal.csv for normal difficulty
         elif difficulty_choice == '3':
             difficulty = "expert"
-            file_name = "TriviaExpert.csv"  # Assuming you have this file for expert questions
+            file_name = "WWTBAPBexpert.csv"  # Assuming you have this file for expert questions
         else:
             print("Invalid choice. Please select a valid difficulty level.")
             return
@@ -132,27 +179,29 @@ def main():
     elif choice == '3':
         if difficulty_choice == '1':
             difficulty = "easy"
-            file_name = "Trivia.csv"  # Assuming you have this file for easy question
+            file_name = "MathC.csv"  # Assuming you have this file for easy question
         elif difficulty_choice == '2':
             difficulty = "normal"
-            file_name = "TriviaNormal.csv"  # Use TriviaNormal.csv for normal difficulty
+            file_name = "MathCNormal.csv"  # Use TriviaNormal.csv for normal difficulty
         elif difficulty_choice == '3':
             difficulty = "expert"
-            file_name = "TriviaExpert.csv"  # Assuming you have this file for expert questions
+            file_name = "MathCExpert.csv"  # Assuming you have this file for expert questions
         else:
             print("Invalid choice. Please select a valid difficulty level.")
             return
 
     elif choice == '4':
+
+
         if difficulty_choice == '1':
             difficulty = "easy"
-            file_name = "Trivia.csv"  # Assuming you have this file for easy question
+            file_name = "Word Puzzle.csv"  # Assuming you have this file for easy question
         elif difficulty_choice == '2':
             difficulty = "normal"
-            file_name = "TriviaNormal.csv"  # Use TriviaNormal.csv for normal difficulty
+            file_name = "WordPuzzleNormal.csv"  # Use TriviaNormal.csv for normal difficulty
         elif difficulty_choice == '3':
             difficulty = "expert"
-            file_name = "TriviaExpert.csv"  # Assuming you have this file for expert questions
+            file_name = "WWTBAPBexpert.csv"  # Assuming you have this file for expert questions
         else:
             print("Invalid choice. Please select a valid difficulty level.")
             return
@@ -182,4 +231,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    while True:
+        main()
+        choice = input("play again? ")
+        if(choice == "no"):
+            break
